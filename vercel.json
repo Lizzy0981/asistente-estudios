@@ -6,18 +6,26 @@
             "use": "@vercel/python"
         },
         {
-            "src": "*.html",
+            "src": "static/**",
             "use": "@vercel/static"
         },
         {
-            "src": "*.js",
+            "src": "*.html",
             "use": "@vercel/static"
         }
     ],
     "routes": [
         {
+            "src": "/static/(.*)",
+            "dest": "/static/$1"
+        },
+        {
+            "src": "/(.*)\\.js",
+            "dest": "/static/$1.js"
+        },
+        {
             "src": "/api/(.*)",
-            "dest": "app.py"
+            "dest": "/app.py"
         },
         {
             "src": "/(.*)",
