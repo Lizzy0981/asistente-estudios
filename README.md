@@ -4,7 +4,8 @@ Una aplicación única e innovadora que optimiza tu tiempo de estudio según tus
 
 ## 📱 Imágenes de la Aplicación 📱
 
-![Asistente de Estudios - Interfaz Principal](https://github.com/user-attachments/assets/e04f3db8-af37-49d4-9df8-d1eccfe21a19)
+![Asistente de Estudios - Interfaz Principal]![screencapture-127-0-0-1-5000-2025-03-02-20_47_12](https://github.com/user-attachments/assets/75b59235-a8b7-4c64-80bc-eb8118e06ab4)
+
 
 *Imagen de captura de pantalla de la aplicación desplegada.*
 
