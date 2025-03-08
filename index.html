@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asistente de Estudios con Gestión de Energía Mental</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.css">
+    <style>
+        /* Estilos base */
+        body {
+            background-color: #f7f9fc;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        /* Efecto glassmorphism para las tarjetas */
+        .glassmorphism {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+        }
+        
+        /* Indicador de energía */
+        .energy-meter {
+            height: 20px;
+            border-radius: 10px;
+            background: linear-gradient(to right, #ff0000, #ffff00, #00ff00);
+            position: relative;
+            overflow: hidden;
+        }
+        .energy-meter::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(
+                to bottom,
+                rgba(255, 255, 255, 0.2) 0%,
+                rgba(255, 255, 255, 0.1) 50%,
+                rgba(0, 0, 0, 0.1) 51%,
+                rgba(0, 0, 0, 0.05) 100%
+            );
+            border-radius: 10px;
+        }
+        .energy-indicator {
+            width: 20px;
+            height: 20px;
+            background-color: #fff;
+            border: 2px solid #000;
+            border-radius: 50%;
+            position: absolute;
+            top: -5px;
+            transform: translateX(-50%);
+            box-shadow: 0 0 10px rgba(0,0,0,0.3);
+            z-index: 1;
+            transition: left 0.5s ease;
+        }
+        
+        /* Animaciones */
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+            }
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translateY(0px);
+            }
+            50% {
+                transform: translateY(-10px);
+            }
+            100% {
+                transform: translateY(0px);
+            }
+        }
+        
+        /* Elementos animados */
+        .animate-fadeInUp {
+            animation: fadeInUp 0.5s ease-out forwards;
+        }
+        
+        .animate-pulse {
+            animation: pulse 2s infinite;
+        }
+        
+        .animate-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        
+        /* Efectos para botones */
+        .btn-effect {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn-effect:after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 5px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.5);
+            opacity: 0;
+            border-radius: 100%;
+            transform: scale(1, 1) translate(-50%);
+            transform-origin: 50% 50%;
+        }
+        
+        .btn-effect:focus:not(:active)::after {
+            animation: ripple 1s ease-out;
+        }
+        
+        @keyframes ripple {
+            0% {
+                transform: scale(0, 0);
+                opacity: 0.5;
+            }
+            20% {
+                transform: scale(25, 25);
+                opacity: 0.3;
+            }
+            100% {
+                opacity: 0;
+                transform: scale(40, 40);
+            }
+        }
+        
+        /* Transiciones */
+        .transition-all {
+            transition-property: all;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+            transition-duration: 300ms;
+        }
+        
+        /* Efectos de hover */
+        .hover-effect:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Fondos animados */
+        .bg-gradient-animated {
+            background: linear-gradient(-45deg, #ee7752, #e73c7e, #23a6d5, #23d5ab);
+            background-size: 400% 400%;
+            animation: gradient 15s ease infinite;
+        }
+        
+        @keyframes gradient {
+            0% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+            100% {
+                background-position: 0% 50%;
+            }
+        }
+        
+        /* Ripple effect */
+        .ripple {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.7);
+            border-radius: 50%;
+            transform: scale(0);
+            animation: ripple-effect 0.6s linear;
+            pointer-events: none;
+        }
+        
+        @keyframes ripple-effect {
+            to {
+                transform: scale(4);
+                opacity: 0;
+            }
+        }
+        
+        /* Efectos de foco para campos de entrada */
+        input:focus, textarea:focus {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.5);
+            outline: none;
+        }
+        
+        /* Mejoras visuales para sliders */
+        input[type="range"] {
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: #e2e8f0;
+            outline: none;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #3b82f6;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8">
+        <header class="mb-8 animate-fadeInUp" style="animation-delay: 0.1s;">
+            <h1 class="text-3xl font-bold text-center text-blue-800 animate-float">Asistente de Estudios con Gestión de Energía Mental</h1>
+            <p class="text-center text-gray-600 mt-2">Optimiza tu tiempo de estudio según tus niveles de energía mental</p>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <!-- Perfil de Usuario -->
+            <div class="bg-white rounded-lg shadow-md p-6 glassmorphism hover-effect transition-all animate-fadeInUp" style="animation-delay: 0.2s;">
+                <h2 class="text-xl font-semibold mb-4 border-b pb-2">Mi Perfil</h2>
+                <div id="user-profile">
+                    <div class="flex justify-between mb-4">
+                        <input id="user-name" type="text" placeholder="Tu nombre" class="border rounded px-3 py-2 w-3/4 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all">
+                        <button id="save-profile" class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 transform transition-all duration-300 hover:scale-105 btn-effect">Guardar</button>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-2">ID de Usuario:</label>
+                        <div class="flex justify-between items-center">
+                            <p id="user-id" class="text-gray-700 bg-gray-100 px-3 py-2 rounded flex-grow">user123</p>
+                            <button id="regenerate-id" class="ml-2 bg-blue-600 text-white px-2 py-1 rounded hover:bg-blue-700 text-sm transform transition-all duration-300 hover:scale-105 btn-effect">
+                                Regenerar
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 class="font-medium mb-2">Mi Patrón de Energía Mental</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                    <span>Mañana</span>
+                                    <span id="morning-value">0%</span>
+                                </div>
+                                <div class="energy-meter">
+                                    <div id="morning-indicator" class="energy-indicator" style="left: 0%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                    <span>Tarde</span>
+                                    <span id="afternoon-value">0%</span>
+                                </div>
+                                <div class="energy-meter">
+                                    <div id="afternoon-indicator" class="energy-indicator" style="left: 0%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                    <span>Noche</span>
+                                    <span id="evening-value">0%</span>
+                                </div>
+                                <div class="energy-meter">
+                                    <div id="evening-indicator" class="energy-indicator" style="left: 0%"></div>
+                                </div>
+                            </div>
+                            <div>
+                                <div class="flex justify-between text-sm text-gray-600 mb-1">
+                                    <span>Madrugada</span>
+                                    <span id="night-value">0%</span>
+                                </div>
+                                <div class="energy-meter">
+                                    <div id="night-indicator" class="energy-indicator" style="left: 0%"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Registrar Sesión -->
+            <div class="bg-white rounded-lg shadow-md p-6 glassmorphism hover-effect transition-all animate-fadeInUp" style="animation-delay: 0.3s;">
+                <h2 class="text-xl font-semibold mb-4 border-b pb-2">Registrar Sesión de Estudio</h2>
+                <form id="session-form">
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Tema/Materia:</label>
+                        <input type="text" id="session-topic" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Duración (minutos):</label>
+                        <input type="number" id="session-duration" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" min="1" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Nivel de Energía (1-10):</label>
+                        <input type="range" id="session-energy" class="w-full accent-blue-600" min="1" max="10" value="5">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Agotado</span>
+                            <span>Adormilado</span>
+                            <span>Normal</span>
+                            <span>Alerta</span>
+                            <span>Máximo</span>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Productividad (1-10):</label>
+                        <input type="range" id="session-productivity" class="w-full accent-blue-600" min="1" max="10" value="5">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Mínima</span>
+                            <span>Baja</span>
+                            <span>Normal</span>
+                            <span>Buena</span>
+                            <span>Excelente</span>
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Notas:</label>
+                        <textarea id="session-notes" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all" rows="2"></textarea>
+                    </div>
+                    <button type="submit" class="w-full bg-green-600 text-white py-2 rounded hover:bg-green-700 transform transition-all duration-300 hover:scale-105 active:scale-95 btn-effect">
+                        Registrar Sesión
+                    </button>
+                </form>
+            </div>
+
+            <!-- Recomendaciones -->
+            <div class="bg-white rounded-lg shadow-md p-6 glassmorphism hover-effect transition-all animate-fadeInUp" style="animation-delay: 0.4s;">
+                <h2 class="text-xl font-semibold mb-4 border-b pb-2">Recomendaciones</h2>
+                <div id="recommendations">
+                    <div class="mb-4">
+                        <h3 class="font-medium mb-2">Consejos Generales</h3>
+                        <ul id="general-advice" class="list-disc pl-5 text-gray-700 space-y-1">
+                            <li>Cargando recomendaciones...</li>
+                        </ul>
+                    </div>
+                    <div>
+                        <h3 class="font-medium mb-2">Horario Óptimo</h3>
+                        <div class="space-y-3">
+                            <div>
+                                <h4 class="text-sm font-medium text-blue-800">Mañana <span class="text-xs text-gray-500">(6am - 12pm)</span></h4>
+                                <ul id="morning-tasks" class="list-disc pl-5 text-gray-700 text-sm">
+                                    <li class="italic text-gray-500">Sin tareas asignadas</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-blue-800">Tarde <span class="text-xs text-gray-500">(12pm - 6pm)</span></h4>
+                                <ul id="afternoon-tasks" class="list-disc pl-5 text-gray-700 text-sm">
+                                    <li class="italic text-gray-500">Sin tareas asignadas</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-blue-800">Noche <span class="text-xs text-gray-500">(6pm - 10pm)</span></h4>
+                                <ul id="evening-tasks" class="list-disc pl-5 text-gray-700 text-sm">
+                                    <li class="italic text-gray-500">Sin tareas asignadas</li>
+                                </ul>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-medium text-blue-800">Madrugada <span class="text-xs text-gray-500">(10pm - 6am)</span></h4>
+                                <ul id="night-tasks" class="list-disc pl-5 text-gray-700 text-sm">
+                                    <li class="italic text-gray-500">Sin tareas asignadas</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tareas -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6 transform transition-all duration-500 hover:shadow-xl glassmorphism animate-fadeInUp" style="animation-delay: 0.5s;">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-xl font-semibold">Mis Tareas</h2>
+                <button id="new-task-btn" class="bg-blue-600 text-white px-3 py-2 rounded hover:bg-blue-700 text-sm transform transition-transform duration-300 hover:scale-105 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50 active:scale-95 btn-effect">
+                    + Nueva Tarea
+                </button>
+            </div>
+            
+            <div id="new-task-form" class="hidden mb-6 p-4 bg-gray-100 rounded-lg transform transition-all duration-500 ease-in-out">
+                <h3 class="font-medium mb-3">Nueva Tarea</h3>
+                <form id="task-form">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Título:</label>
+                            <input type="text" id="task-title" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300" required>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">Fecha Límite:</label>
+                            <input type="date" id="task-deadline" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300">
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Descripción:</label>
+                        <textarea id="task-description" class="w-full border rounded px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-300" rows="2"></textarea>
+                    </div>
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium mb-1">Nivel de Energía Requerido (1-10):</label>
+                        <input type="range" id="task-energy" class="w-full accent-blue-600" min="1" max="10" value="5">
+                        <div class="flex justify-between text-xs text-gray-500">
+                            <span>Mínimo</span>
+                            <span>Bajo</span>
+                            <span>Medio</span>
+                            <span>Alto</span>
+                            <span>Máximo</span>
+                        </div>
+                    </div>
+                    <div class="flex justify-end space-x-2">
+                        <button type="button" id="cancel-task" class="px-4 py-2 border rounded hover:bg-gray-200 transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                            Cancelar
+                        </button>
+                        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 transition-all duration-300 transform hover:scale-105 active:scale-95 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-opacity-50 btn-effect">
+                            Guardar Tarea
+                        </button>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tarea</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Energía</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Fecha Límite</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasks-table" class="bg-white divide-y divide-gray-200">
+                        <tr>
+                            <td colspan="5" class="px-6 py-4 text-center text-gray-500 italic">No hay tareas registradas</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Calendario -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6 glassmorphism hover-effect transition-all animate-fadeInUp" style="animation-delay: 0.6s;">
+            <h2 class="text-xl font-semibold mb-4">Calendario de Estudio</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-7 gap-2">
+                <div class="hidden lg:block p-2 text-center font-medium text-gray-700 bg-gray-100 rounded">Lunes</div>
+                <div class="hidden lg:block p-2 text-center font-medium text-gray-700 bg-gray-100 rounded">Martes</div>
+                <div class="hidden lg:block p-2 text-center font-medium text-gray-700 bg-gray-100 rounded">Miércoles</div>
+                <div class="hidden lg:block p-2 text-center font-medium text-gray-700 bg-gray-100 rounded">Jueves</div>
+                <div class="hidden lg:block p-2 text-center font-medium text-gray-700 bg-gray-100 rounded">Viernes</div>
+                <div class="hidden lg:block p-2 text-center font-medium text-gray-700 bg-gray-100 rounded">Sábado</div>
+                <div class="hidden lg:block p-2 text-center font-medium text-gray-700 bg-gray-100 rounded">Domingo</div>
+                
+                <!-- Celdas del calendario (generadas dinámicamente por JS) -->
+                <div id="calendar-grid" class="col-span-1 lg:col-span-7 grid grid-cols-1 lg:grid-cols-7 gap-2">
+                    <!-- Aquí se insertarán las celdas del calendario -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="mt-8 bg-white rounded-lg shadow-md p-6 glassmorphism hover-effect transition-all animate-fadeInUp" style="animation-delay: 0.7s;">
+            <h2 class="text-xl font-semibold mb-4">Análisis de Productividad</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div>
+                    <h3 class="font-medium mb-3 text-center">Energía vs Productividad</h3>
+                    <div class="h-64">
+                        <canvas id="energy-productivity-chart"></canvas>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="font-medium mb-3 text-center">Productividad por Momento del Día</h3>
+                    <div class="h-64">
+                        <canvas id="time-productivity-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="mt-8 pb-6 text-center">
+        <div class="flex flex-col items-center gap-4 py-6">
+            <h2 id="footer-title" class="text-2xl font-bold" style="background: linear-gradient(to right, #5865F2, #4752C4, #5865F2); -webkit-background-clip: text; background-clip: text; color: transparent; transition: transform 0.5s;">
+                Elizabeth Diaz Familia
+            </h2>
+            
+            <div class="flex gap-6">
+                <a 
+                   href="https://github.com/Lizzy0981" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="transform transition-all duration-300 hover:scale-125"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-github">
+                        <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"></path>
+                    </svg>
+                </a>
+                
+                <a 
+                   href="https://linkedin.com/in/eli-familia" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="transform transition-all duration-300 hover:scale-125"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-linkedin">
+                        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+                        <rect x="2" y="9" width="4" height="12"></rect>
+                        <circle cx="4" cy="4" r="2"></circle>
+                    </svg>
+                </a>
+                
+                <a 
+                   href="https://twitter.com/Lizzyfamilia" 
+                   target="_blank" 
+                   rel="noopener noreferrer"
+                   class="transform transition-all duration-300 hover:scale-125"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="icon-twitter">
+                        <path d="M22 4s-.7 2.1-2 3.4c1.6 10-9.4 17.3-18 11.6 2.2.1 4.4-.6 6-2C3 15.5.5 9.6 3 5c2.2 2.6 5.6 4.1 9 4-.9-4.2 4-6.6 7-3.8 1.1 0 3-1.2 3-1.2z"></path>
+                    </svg>
+                </a>
+            </div>
+            
+            <div class="text-sm mt-2 font-medium text-gray-600 hover:text-blue-600 transition-colors duration-300 flex flex-col items-center gap-1">
+                <p>Asistente de Estudios con Gestión de Energía Mental</p>
+                <p class="text-xs opacity-75">© <span id="current-year">2025</span> | Made with 💜</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Modal para mensajes -->
+    <div id="notification-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden z-50">
+        <div class="bg-white rounded-lg p-6 max-w-md mx-4 transform transition-all duration-300 scale-95 opacity-0" id="modal-content">
+            <h3 id="modal-title" class="text-lg font-semibold mb-2"></h3>
+            <p id="modal-message" class="text-gray-700 mb-4"></p>
+            <div class="flex justify-end">
+                <button id="modal-close" class="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition-all duration-300 transform hover:scale-105 active:scale-95 btn-effect">
+                    Aceptar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.9.4/Chart.min.js"></script>
+    <script src="/static/app.js"></script>
+    <script>
+        // Actualizar el año actual en el footer
+        document.getElementById('current-year').textContent = new Date().getFullYear();
+        
+        // Animar el título del footer (efecto pulse)
+        const footerTitle = document.getElementById('footer-title');
+        
+        // Función para animar el título
+        function animateTitle() {
+            footerTitle.style.transform = 'scale(1.05)';
+            setTimeout(() => {
+                footerTitle.style.transform = 'scale(1)';
+            }, 1000);
+        }
+        
+        // Iniciar la animación y repetirla cada 2 segundos
+        animateTitle();
+        setInterval(animateTitle, 2000);
+        
+        // Añadir animaciones a los iconos sociales
+        const socialIcons = document.querySelectorAll('.icon-github, .icon-linkedin, .icon-twitter');
+        
+        socialIcons.forEach((icon, index) => {
+            // Añadir una pequeña animación inicial
+            setTimeout(() => {
+                icon.style.animation = 'bounce 1s';
+            }, index * 100); // Pequeño retraso para cada icono
+            
+            // Añadir rotación al pasar el cursor
+            icon.addEventListener('mouseover', () => {
+                const rotation = index % 2 === 0 ? 'rotate(12deg)' : 'rotate(-12deg)';
+                icon.style.transform = rotation;
+            });
+            
+            icon.addEventListener('mouseout', () => {
+                icon.style.transform = 'rotate(0deg)';
+            });
+        });
+        
+        // Definir la animación de bounce
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% {
+                    transform: translateY(0);
+                }
+                40% {
+                    transform: translateY(-10px);
+                }
+                60% {
+                    transform: translateY(-5px);
+                }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // Efecto ripple para botones
+        const buttons = document.querySelectorAll('.btn-effect');
+        buttons.forEach(button => {
+            button.addEventListener('click', function(e) {
+                const rect = button.getBoundingClientRect();
+                const x = e.clientX - rect.left;
+                const y = e.clientY - rect.top;
+                
+                const ripple = document.createElement('span');
+                ripple.className = 'ripple';
+                ripple.style.left = `${x}px`;
+                ripple.style.top = `${y}px`;
+                
+                button.appendChild(ripple);
+                
+                setTimeout(() => {
+                    ripple.remove();
+                }, 600);
+            });
+        });
+    </script>
+</body>
+</html>
