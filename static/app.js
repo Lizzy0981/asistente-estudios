@@ -19,6 +19,13 @@ console.log('ID de usuario actual:', USER_ID);
 
 // Funciones para mostrar notificaciones con animaciones
 function showNotification(title, message) {
+    // No mostrar notificaciones de error en producción
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
+    if (isProduction && title === 'Error' && message.includes('No se pudieron cargar los datos')) {
+        console.log('Notificación de error suprimida en producción:', message);
+        return; // No mostrar el error en producción
+    }
+    
     const modalContent = document.getElementById('modal-content');
     const modal = document.getElementById('notification-modal');
     
