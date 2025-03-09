@@ -931,41 +931,13 @@ async function initApp() {
         console.error('Elemento no encontrado: user-id');
     }
     
-    // Comprobar si estamos en modo offline (desarrollo local)
-    const isOfflineMode = !API_BASE_URL.includes('https://');
+    // Detectar entorno de producción
+    const isProduction = window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1';
     
-    if (isOfflineMode) {
-        console.log('Ejecutando en modo offline');
+    if (isProduction) {
+        console.log('Ambiente de producción detectado, usando modo offline automáticamente');
         const offlineAPI = enableOfflineMode();
-        
-        // Reemplazar funciones de API con versiones offline
-        window.fetchUserData = offlineAPI.fetchUserData;
-        window.saveUserProfile = offlineAPI.saveUserProfile;
-        window.logStudySession = offlineAPI.logStudySession;
-        window.addTask = offlineAPI.addTask;
-        window.updateTaskStatus = offlineAPI.updateTaskStatus;
-        window.fetchRecommendations = offlineAPI.fetchRecommendations;
-    } else {
-        // Usar funciones normales de API
-        window.fetchUserData = fetchUserData;
-        window.saveUserProfile = saveUserProfile;
-        window.logStudySession = logStudySession;
-        window.addTask = addTask;
-        window.updateTaskStatus = updateTaskStatus;
-        window.fetchRecommendations = fetchRecommendations;
-    }
-    
-    try {
-        // Cargar datos del usuario
-        userData = await window.fetchUserData();
-        console.log('Datos de usuario cargados:', userData);
-        updateUIWithUserData();
-    } catch (error) {
-        console.error('Error cargando datos del usuario:', error);
-        showNotification('Error', 'No se pudieron cargar los datos. Usando modo offline.');
-        
-        // Activar modo offline como fallback
-        const offlineAPI = enableOfflineMode();
+        // Configurar APIs offline
         window.fetchUserData = offlineAPI.fetchUserData;
         window.saveUserProfile = offlineAPI.saveUserProfile;
         window.logStudySession = offlineAPI.logStudySession;
@@ -976,15 +948,66 @@ async function initApp() {
         // Cargar datos offline
         userData = await window.fetchUserData();
         updateUIWithUserData();
-    }
-    
-    try {
-        // Cargar recomendaciones
+        
+        // Cargar recomendaciones offline
         const recommendations = await window.fetchRecommendations();
-        console.log('Recomendaciones cargadas:', recommendations);
         updateRecommendations(recommendations);
-    } catch (error) {
-        console.error('Error cargando recomendaciones:', error);
+    } else {
+        // Código original para entorno de desarrollo local
+        const isOfflineMode = !API_BASE_URL.includes('https://');
+        
+        if (isOfflineMode) {
+            console.log('Ejecutando en modo offline');
+            const offlineAPI = enableOfflineMode();
+            
+            // Reemplazar funciones de API con versiones offline
+            window.fetchUserData = offlineAPI.fetchUserData;
+            window.saveUserProfile = offlineAPI.saveUserProfile;
+            window.logStudySession = offlineAPI.logStudySession;
+            window.addTask = offlineAPI.addTask;
+            window.updateTaskStatus = offlineAPI.updateTaskStatus;
+            window.fetchRecommendations = offlineAPI.fetchRecommendations;
+        } else {
+            // Usar funciones normales de API
+            window.fetchUserData = fetchUserData;
+            window.saveUserProfile = saveUserProfile;
+            window.logStudySession = logStudySession;
+            window.addTask = addTask;
+            window.updateTaskStatus = updateTaskStatus;
+            window.fetchRecommendations = fetchRecommendations;
+        }
+        
+        try {
+            // Cargar datos del usuario
+            userData = await window.fetchUserData();
+            console.log('Datos de usuario cargados:', userData);
+            updateUIWithUserData();
+        } catch (error) {
+            console.error('Error cargando datos del usuario:', error);
+            showNotification('Error', 'No se pudieron cargar los datos. Usando modo offline.');
+            
+            // Activar modo offline como fallback
+            const offlineAPI = enableOfflineMode();
+            window.fetchUserData = offlineAPI.fetchUserData;
+            window.saveUserProfile = offlineAPI.saveUserProfile;
+            window.logStudySession = offlineAPI.logStudySession;
+            window.addTask = offlineAPI.addTask;
+            window.updateTaskStatus = offlineAPI.updateTaskStatus;
+            window.fetchRecommendations = offlineAPI.fetchRecommendations;
+            
+            // Cargar datos offline
+            userData = await window.fetchUserData();
+            updateUIWithUserData();
+        }
+        
+        try {
+            // Cargar recomendaciones
+            const recommendations = await window.fetchRecommendations();
+            console.log('Recomendaciones cargadas:', recommendations);
+            updateRecommendations(recommendations);
+        } catch (error) {
+            console.error('Error cargando recomendaciones:', error);
+        }
     }
     
     // Inicializar gráficos
